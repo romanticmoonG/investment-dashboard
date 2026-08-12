@@ -235,6 +235,16 @@
     .modal-label { font-size: 13px; color: var(--text-sub); }
     .modal-value { font-size: 13px; font-weight: 600; }
 
+    /* ── Afternoon Brief ── */
+    .afternoon-loading { text-align: center; padding: 24px; color: var(--text-sub); font-size: 13px; }
+    .afternoon-section { margin-bottom: 14px; }
+    .afternoon-section:last-child { margin-bottom: 0; }
+    .afternoon-section-title { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+    .afternoon-item { padding: 7px 10px; background: var(--bg); border-radius: 7px; margin-bottom: 5px; font-size: 13px; line-height: 1.6; }
+    .afternoon-item:last-child { margin-bottom: 0; }
+    .afternoon-meta { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+    .afternoon-empty { text-align: center; padding: 20px; color: var(--text-sub); font-size: 13px; }
+
     /* ── Responsive ── */
     @media (max-width: 900px) {
       .grid-2, .grid-3, .grid-4, .grid-main { grid-template-columns: 1fr; }
@@ -363,6 +373,18 @@
         <div class="card-body">
           <div class="event-list" id="eventList">加载中...</div>
         </div>
+      </div>
+    </div>
+
+    <!-- 午盘快讯 -->
+    <div class="section-label">午盘快讯</div>
+    <div class="card" id="afternoonCard">
+      <div class="card-header">
+        <span class="card-title">📡 午盘快讯</span>
+        <span class="badge badge-warn" id="afternoonTime">--:--</span>
+      </div>
+      <div class="card-body" id="afternoonContent">
+        <div class="afternoon-loading">⏳ 午盘简报生成中，14:00后自动更新...</div>
       </div>
     </div>
 
@@ -810,15 +832,18 @@
 };
     const HISTORY_DATA = [{"name": "乐山电力", "code": "600644", "action": "获利了结", "pl": 75.5, "date": "08-04"}, {"name": "云赛智联", "code": "600602", "action": "获利了结", "pl": 15.0, "date": "08-04"}, {"name": "万通发展", "code": "600246", "action": "止损离场", "pl": -21.1, "date": "07-22"}, {"name": "拓维信息", "code": "002261", "action": "止损离场", "pl": -14.4, "date": "07-21"}];
 
+    const AFTERMNOON_DATA = {"time": "--:--", "content": []};
+
     // ── 初始化 ──
     
-    const INDEX_DATA = {"value": "3940.05", "change": "+0.15", "up": true, "date": "08.12", "sz": "+0.86", "cy": "+1.19", "kc": "+1.28", "support": "3850", "resist": "3850", "volume": "4亿"};
+    const INDEX_DATA = {"value": "3941.13", "change": "+0.18", "up": true, "date": "08.12", "sz": "+0.72", "cy": "+0.94", "kc": "+0.85", "support": "3850", "resist": "3850", "volume": "4亿"};
     
     function init() {
       updateMarketTime();
       renderPositions();
       renderPool();
       renderEvents();
+      renderAfternoon();
       // 从 URL 参数或缓存读沪指（联网版由脚本注入）
       if (typeof INDEX_DATA !== 'undefined') {
         renderIndex(INDEX_DATA);
@@ -939,6 +964,32 @@
           </div>
         `;
       }).join('');
+    }
+
+    // ── 午盘快讯渲染 ──
+    function renderAfternoon() {
+      const d = AFTERMNOON_DATA;
+      const el = document.getElementById('afternoonContent');
+      const timeEl = document.getElementById('afternoonTime');
+      
+      if (!d || !d.content || d.content.length === 0) {
+        el.innerHTML = '<div class="afternoon-empty">⏳ 午盘简报生成中，14:00后自动更新...</div>';
+        timeEl.textContent = '--:--';
+        return;
+      }
+      
+      timeEl.textContent = d.time || '14:00';
+      el.innerHTML = d.content.map(sec => `
+        <div class="afternoon-section">
+          <div class="afternoon-section-title">${sec.icon} ${sec.title}</div>
+          ${sec.items.map(item => `
+            <div class="afternoon-item">
+              ${item.text}
+              ${item.meta ? `<div class="afternoon-meta">${item.meta}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
     }
 
     // ── 个股详情弹窗 ──
