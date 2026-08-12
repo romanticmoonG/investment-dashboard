@@ -244,6 +244,15 @@
     .afternoon-item:last-child { margin-bottom: 0; }
     .afternoon-meta { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
     .afternoon-empty { text-align: center; padding: 20px; color: var(--text-sub); font-size: 13px; }
+    .afternoon-day { margin-bottom: 8px; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+    .afternoon-day.open { border-color: var(--accent); }
+    .afternoon-day-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; background: var(--bg); user-select: none; }
+    .afternoon-day-header:hover { background: #eef1fa; }
+    .af-day-dot { font-size: 10px; color: var(--accent); min-width: 12px; }
+    .af-day-date { font-weight: 700; font-size: 13px; flex: 1; }
+    .af-day-time { font-size: 11px; color: var(--text-sub); }
+    .af-day-arrow { font-size: 11px; color: var(--text-sub); }
+    .afternoon-day-body { padding: 12px 14px; border-top: 1px solid var(--border); }
 
     /* ── Responsive ── */
     @media (max-width: 900px) {
@@ -832,12 +841,9 @@
 };
     const HISTORY_DATA = [{"name": "乐山电力", "code": "600644", "action": "获利了结", "pl": 75.5, "date": "08-04"}, {"name": "云赛智联", "code": "600602", "action": "获利了结", "pl": 15.0, "date": "08-04"}, {"name": "万通发展", "code": "600246", "action": "止损离场", "pl": -21.1, "date": "07-22"}, {"name": "拓维信息", "code": "002261", "action": "止损离场", "pl": -14.4, "date": "07-21"}];
 
-    const AFTERMNOON_DATA = {"time": "--:--", "content": []};
+    const AFTERMNOON_DATA = [];
 
     // ── 初始化 ──
-    
-    const INDEX_DATA = {"value": "3941.13", "change": "+0.18", "up": true, "date": "08.12", "sz": "+0.72", "cy": "+0.94", "kc": "+0.85", "support": "3850", "resist": "3850", "volume": "4亿"};
-    
     function init() {
       updateMarketTime();
       renderPositions();
@@ -966,30 +972,64 @@
       }).join('');
     }
 
-    // ── 午盘快讯渲染 ──
+    // ── 午盘快讯渲染（历史列表+展开）──
     function renderAfternoon() {
-      const d = AFTERMNOON_DATA;
+      const list = AFTERMNOON_DATA;
       const el = document.getElementById('afternoonContent');
       const timeEl = document.getElementById('afternoonTime');
       
-      if (!d || !d.content || d.content.length === 0) {
-        el.innerHTML = '<div class="afternoon-empty">⏳ 午盘简报生成中，14:00后自动更新...</div>';
+      if (!list || list.length === 0) {
+        el.innerHTML = '<div class="afternoon-empty">⏳ 暂无午盘记录，14:00后自动更新...</div>';
         timeEl.textContent = '--:--';
         return;
       }
       
-      timeEl.textContent = d.time || '14:00';
-      el.innerHTML = d.content.map(sec => `
-        <div class="afternoon-section">
-          <div class="afternoon-section-title">${sec.icon} ${sec.title}</div>
-          ${sec.items.map(item => `
-            <div class="afternoon-item">
-              ${item.text}
-              ${item.meta ? `<div class="afternoon-meta">${item.meta}</div>` : ''}
+      // 今天日期
+      const today = new Date();
+      const todayStr = String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+      
+      // 默认展开今天，其他折叠
+      el.innerHTML = list.map((day, i) => {
+        const isToday = day.date === todayStr;
+        const isOpen = isToday;
+        const dot = isToday ? '●' : '○';
+        return `
+          <div class="afternoon-day ${isOpen ? 'open' : ''}" id="afDay${i}">
+            <div class="afternoon-day-header" onclick="toggleAfDay(${i})">
+              <span class="af-day-dot">${dot}</span>
+              <span class="af-day-date">${day.date}</span>
+              <span class="af-day-time">${day.time}</span>
+              <span class="af-day-arrow">${isOpen ? '▼' : '▶'}</span>
             </div>
-          `).join('')}
-        </div>
-      `).join('');
+            <div class="afternoon-day-body" id="afBody${i}" style="display:${isOpen?'block':'none'}">
+              ${day.content.length > 0 ? day.content.map(sec => `
+                <div class="afternoon-section">
+                  <div class="afternoon-section-title">${sec.icon} ${sec.title}</div>
+                  ${sec.items.map(item => `
+                    <div class="afternoon-item">
+                      ${item.text}
+                      ${item.meta ? `<div class="afternoon-meta">（${item.meta}）</div>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              `).join('') : '<div class="afternoon-empty" style="padding:12px">内容为空</div>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      timeEl.textContent = list.length + '天记录';
+    }
+
+    function toggleAfDay(i) {
+      const header = document.querySelector(`#afDay${i} .afternoon-day-header`);
+      const body = document.getElementById(`afBody${i}`);
+      const arrow = header.querySelector('.af-day-arrow');
+      const dot = header.querySelector('.af-day-dot');
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'block';
+      arrow.textContent = isOpen ? '▶' : '▼';
+      dot.textContent = isOpen ? '○' : '●';
     }
 
     // ── 个股详情弹窗 ──
